@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Premier Zone Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<h1>⚽ Premier Zone Dashboard</h1>
+
+<input type="text" id="searchBox" placeholder="Search by name, team, or nation..." />
+
+<table id="playerTable">
+    <thead>
+    <tr>
+        <th data-sort="name">Name ⬍</th>
+        <th data-sort="nation">Nation ⬍</th>
+        <th data-sort="team">Team ⬍</th>
+        <th data-sort="age">Age ⬍</th>
+        <th data-sort="pos">Position ⬍</th>
+        <th data-sort="starts">Starts ⬍</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    // same JS as before — no changes
+    let allPlayers = [];
+    let currentSort = { key: null, ascending: true };
+
+    const teamLogos = {
+        "Manchester City": "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg",
+        "Arsenal": "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg",
+        "Liverpool": "https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg",
+        "Chelsea": "https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg",
+        "Tottenham": "https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg",
+        "Manchester United": "https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg",
+        "Newcastle": "https://upload.wikimedia.org/wikipedia/en/5/56/Newcastle_United_Logo.svg",
+        "Aston Villa": "https://upload.wikimedia.org/wikipedia/en/f/f9/Aston_Villa_FC_crest_%282016%29.svg"
+    };
+
+    function getFlagImage(nationName) {
+        if (!nationName) return "";
+
+        // Example input: "br BRA" → extract "br"
+        const codePart = nationName.split(" ")[0].trim().toLowerCase();
+
+        // Some FIFA codes like "eng" or "sco" need mapping to proper country codes
+        const map = {
+            eng: "gb",   // England
+            sco: "gb-sct", // Scotland
+            wal: "gb-wls", // Wales
+            nir: "gb-nir", // Northern Ireland
+            sui: "ch",   // Switzerland
+            gha: "gh",
+            bra: "br",
+            fra: "fr",
+            nor: "no",
+            jpn: "jp",
+            ukr: "ua",
+            bel: "be",
+            por: "pt",
+            arg: "ar",
+            ger: "de",
+            ita: "it",
+            ned: "nl",
+            esp: "es",
+            cro: "hr",
+            den: "dk"
+        };
+
+        const flagCode = map[codePart] || codePart;
+        return `https://flagcdn.com/w40/${flagCode}.png`;
+    }
+    fetch("/api/v1/player")
+        .then(res => res.json())
+        .then(players => {
+            allPlayers = players;
+            displayPlayers(players);
+        })
+        .catch(err => console.error("Error fetching players:", err));
+
+    function displayPlayers(players) {
+        const tbody = document.querySelector("#playerTable tbody");
+        tbody.innerHTML = "";
+        if (!players || players.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='6'>No players found</td></tr>";
+            return;
+        }
+
+        players.forEach(p => {
+            const flagUrl = getFlagImage(p.nation);
+            const logoUrl = teamLogos[p.team] || "";
+            const row = document.createElement("tr");
+            row.innerHTML = `
+          <td>${p.name || "-"}</td>
+          <td>${flagUrl ? `<img class="flag" src="${flagUrl}" />` : ""}${p.nation || "-"}</td>
+          <td>${logoUrl ? `<img class="logo" src="${logoUrl}" />` : ""}${p.team || "-"}</td>
+          <td>${p.age || "-"}</td>
+          <td>${p.pos || "-"}</td>
+          <td>${p.starts || "-"}</td>
+        `;
+            tbody.appendChild(row);
+        });
+    }
+
+    document.getElementById("searchBox").addEventListener("input", e => {
+        const search = e.target.value.toLowerCase();
+        const filtered = allPlayers.filter(p =>
+            (p.name && p.name.toLowerCase().includes(search)) ||
+            (p.team && p.team.toLowerCase().includes(search)) ||
+            (p.nation && p.nation.toLowerCase().includes(search))
+        );
+        displayPlayers(filtered);
+    });
+
+    document.querySelectorAll("th[data-sort]").forEach(header => {
+        header.addEventListener("click", () => {
+            const key = header.dataset.sort;
+            if (currentSort.key === key) {
+                currentSort.ascending = !currentSort.ascending;
+            } else {
+                currentSort.key = key;
+                currentSort.ascending = true;
+            }
+
+            const sorted = [...allPlayers].sort((a, b) => {
+                const valA = a[key] ? a[key].toString().toLowerCase() : "";
+                const valB = b[key] ? b[key].toString().toLowerCase() : "";
+
+                if (!isNaN(valA) && !isNaN(valB)) {
+                    return currentSort.ascending
+                        ? Number(valA) - Number(valB)
+                        : Number(valB) - Number(valA);
+                }
+                return currentSort.ascending
+                    ? valA.localeCompare(valB)
+                    : valB.localeCompare(valA);
+            });
+            displayPlayers(sorted);
+        });
+    });
+</script>
+</body>
+</html>
