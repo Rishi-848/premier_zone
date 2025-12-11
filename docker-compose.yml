@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: premier-postgres
+    environment:
+      POSTGRES_DB: premierdb
+      POSTGRES_USER: premieruser
+      POSTGRES_PASSWORD: premierpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: premier-backend
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/premierdb
+      SPRING_DATASOURCE_USERNAME: premieruser
+      SPRING_DATASOURCE_PASSWORD: premierpass
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
