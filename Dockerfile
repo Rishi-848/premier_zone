@@ -1,10 +1,7 @@
 FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
-
 COPY target/premier-zone-0.0.1-SNAPSHOT.jar /app/app.jar
-
-RUN java -version && ls -lh /app
 
 EXPOSE 8080
 
