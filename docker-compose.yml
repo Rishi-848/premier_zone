@@ -1,27 +1,35 @@
-version: "3.9"
-
+version: "3.8"
 services:
   db:
     image: postgres:16
-    container_name: premier-postgres
     environment:
-      POSTGRES_DB: premierdb
-      POSTGRES_USER: premieruser
-      POSTGRES_PASSWORD: premierpass
+      POSTGRES_DB: rishilekkala
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localpass123
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rishilekkala"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+    restart: unless-stopped
 
-  backend:
-    build: .
-    container_name: premier-backend
+  app:
+    image: premier-zone-local
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/premierdb
-      SPRING_DATASOURCE_USERNAME: premieruser
-      SPRING_DATASOURCE_PASSWORD: premierpass
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/rishilekkala
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: localpass123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
     ports:
       - "8080:8080"
     restart: unless-stopped
